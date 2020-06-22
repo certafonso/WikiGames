@@ -66,8 +66,8 @@ class Client(discord.Client):
 
         for channel in self.running_games.keys():
             for player in self.running_games[channel]["Players"]:
-                print(user.id)
-                print(player.id)
+                # print(user.id)
+                # print(player.id)
                 if user.id == player.id:
                     return channel
         return None
@@ -117,25 +117,29 @@ class Client(discord.Client):
             #     self.running_games[str(channel.id)]["PlayerQueue"].remove(player)
             await channel.send(f"Bye {player.mention}")
         
-        print(self.running_games)
+        # print(self.running_games)
 
     async def display_players(self, channel):
         """Displays a list of all players"""
 
+        message = ""
+
         if len(self.running_games[str(channel.id)]["Players"]) != 0:
-            await channel.send("Player list:")
+            message += "Player list:\n"
             for player in self.running_games[str(channel.id)]["Players"]:
-                await channel.send(player.mention)
+                message += player.mention + "\n"
 
             # if len(self.running_games[str(channel.id)]["PlayerQueue"]) != 0:
             #     await channel.send("Players on queue:")
             #     for player in self.running_games[str(channel.id)]["PlayerQueue"]:
             #         await channel.send(player.mention)
             
-            await channel.send("Type `-join` to join the game or `-leave` to leave the game.")
+            message += "Type `-join` to join the game or `-leave` to leave the game."
 
         else:
-            await channel.send("No one is playing :(")
+            message += "No one is playing :("
+
+        await channel.send(message)
 
     async def game_selection(self, channel):
         self.running_games[str(channel.id)]["WaitingPlayers"] = False
@@ -149,6 +153,8 @@ class Client(discord.Client):
         self.running_games[str(channel.id)]["Game"] = None
         self.running_games[str(channel.id)]["WaitingPlayers"] = True
 
+        await channel.send("GoodBye")
+
 class nPeopleAreLying():
     def __init__(self, channel, players):
 
@@ -157,8 +163,8 @@ class nPeopleAreLying():
         self.GameStage = 0
         self.Articles = []
         self.Ready = []
-        self.Guesser = None
-        self.ArticleChoosen = None
+        self.Guesser = 0
+        self.ArticleChoosen = 0
 
     async def on_message(self, message):
         """Will handle messages for the game nPeopleAreLying"""
@@ -176,7 +182,7 @@ class nPeopleAreLying():
                         try:
                             await self.ReceiveArticle(self.Players[self.get_index(message.author.id)], command[1])
                         except IndexError:
-                            await self.Players[self.get_index(message.author.id)].dm_channel.send("Escreve um artigo idiota")
+                            await self.Players[self.get_index(message.author.id)].dm_channel.send("You didn't write an article")
 
         else:
             if self.GameStage == 1:     # game in stage 1 - guessing the articles
@@ -186,7 +192,7 @@ class nPeopleAreLying():
                 if command[0] == "-play" and message.author == self.Players[0]:
                     await self.Setup_Round()
 
-        print(self.Articles, self.Ready)
+        # print(self.Articles, self.Ready)
 
     def get_index(self, userId):
         """Returns the index of a player, given his id"""
@@ -206,8 +212,11 @@ class nPeopleAreLying():
             try:
                 self.Articles.append(wikipedia.page(article))   
 
-            except wikipedia.exceptions.DisambiguationError as e:
-                self.Articles.append(wikipedia.page(random.choice(e.options)))  # chooses a random article from the disambiguation page
+            except wikipedia.exceptions.DisambiguationError:
+                article = wikipedia.random(pages=len(self.Players))   # generates new article
+                
+                self.Articles.append(wikipedia.page(article))   
+                # self.Articles.append(wikipedia.page(random.choice(e.options)))  # chooses a random article from the disambiguation page
 
             except wikipedia.exceptions.PageError:  # something weird happened let's just try again
                 self.Articles = []
@@ -225,8 +234,11 @@ class nPeopleAreLying():
                 dm = self.Players[i].dm_channel
 
             url = self.Articles[i].title.replace(" ", "_")
-            await dm.send(f"{self.Articles[i].title}\n{self.Articles[i].summary}\nhttps://en.wikipedia.org/wiki/{url}")
-            await dm.send(f"Type `-ready` once you're ready. If you want another article type `-new`.")
+            await dm.send(f"""{self.Articles[i].title}\n
+            {self.Articles[i].summary}\n
+            https://en.wikipedia.org/wiki/{url}\n
+            Type `-ready` once you're ready. If you want another article type `-new`. You can also submit your own article using `-submit [article URL]`
+            """)
 
     async def Setup_Round(self):
         """Will setup a round"""
@@ -240,8 +252,11 @@ class nPeopleAreLying():
         try:
             self.Articles[self.ArticleChoosen] = wikipedia.page(article) 
 
-        except wikipedia.exceptions.DisambiguationError as e:
-            self.Articles[self.ArticleChoosen] = wikipedia.page(random.choice(e.options))  # chooses a random article from the disambiguation page
+        except wikipedia.exceptions.DisambiguationError:
+                article = wikipedia.random(pages=len(self.Players))   # generates new article
+                
+                self.Articles.append(wikipedia.page(article))   
+                # self.Articles.append(wikipedia.page(random.choice(e.options)))  # chooses a random article from the disambiguation page
 
         except wikipedia.exceptions.PageError:  # something weird happened let's just try again
             self.Setup_Round()
@@ -255,8 +270,11 @@ class nPeopleAreLying():
             dm = self.Players[self.ArticleChoosen].dm_channel
 
         url = self.Articles[self.ArticleChoosen].title.replace(" ", "_")
-        await dm.send(f"{self.Articles[self.ArticleChoosen].title}\n{self.Articles[self.ArticleChoosen].summary}\nhttps://en.wikipedia.org/wiki/{url}")
-        await dm.send(f"Type `-ready` once you're ready. If you want another article type `-new`.")
+        await dm.send(f"""{self.Articles[self.ArticleChoosen].title}\n
+        {self.Articles[self.ArticleChoosen].summary}\n
+        https://en.wikipedia.org/wiki/{url}\n
+        Type `-ready` once you're ready. If you want another article type `-new`. You can also submit your own article using `-submit [article URL]`
+        """)
 
     async def AcceptArticle(self, player):
         """Will add the player to the ready list once he accepted his article"""
@@ -284,10 +302,13 @@ class nPeopleAreLying():
         self.Articles[i] = wikipedia.page(article)
 
         url = self.Articles[i].title.replace(" ", "_")
-        await dm.send(f"{self.Articles[i].title}\n{self.Articles[i].summary}\nhttps://en.wikipedia.org/wiki/{url}")
-        await dm.send(f"Type `-ready` once you're ready. If you want another article type `-new`.")
+        await dm.send(f"""{self.Articles[i].title}\n
+        {self.Articles[i].summary}\n
+        https://en.wikipedia.org/wiki/{url}\n
+        Type `-ready` once you're ready. If you want another article type `-new`. You can also submit your own article using `-submit [article URL]`""")
 
     async def ReceiveArticle(self, player, url):
+        """Receives an article submited by a player"""
 
         try:
             dm = player.dm_channel
@@ -311,9 +332,7 @@ class nPeopleAreLying():
                 await self.StartRound()
 
         except wikipedia.exceptions.PageError:
-            await player.dm_channel.send("ERRO")
-
-        print(self.Articles, self.Ready)
+            await player.dm_channel.send("An error ocurred. Please try again.")
 
     def CheckReady(self):
         """Counts the number of ready players"""
@@ -327,17 +346,16 @@ class nPeopleAreLying():
     async def StartRound(self):
         """Selects a random player to guess and a random article"""
 
-        print("hey")
-
         self.Guesser = random.randint(0, len(self.Players)-1)
         self.ArticleChoosen = self.Guesser
 
-        await self.Channel.send(f"{self.Players[self.Guesser].mention} is guessing.\nTo guess type `-guess` and then mention the person you think is telling the truth.")
+        message = f"{self.Players[self.Guesser].mention} is guessing.\nTo guess type `-guess` and then mention the person you think is telling the truth.\n"
 
         while self.Guesser == self.ArticleChoosen:
             self.ArticleChoosen = random.randint(0, len(self.Players)-1)
 
-        await self.Channel.send(f"The article is {self.Articles[self.ArticleChoosen].title}.")
+        message += f"The article is {self.Articles[self.ArticleChoosen].title}."
+        await self.Channel.send(message)
 
         self.GameStage = 1
 
@@ -349,18 +367,20 @@ class nPeopleAreLying():
         
         else:
             if guess[3:] == self.Players[self.ArticleChoosen].mention[2:]: # guess is right
-                await self.Channel.send("You're right!")
+                message = "You're right!\n"
             else:                                                       # guess is wrong
-                await self.Channel.send(f"You're wrong, the article was from {self.Players[self.ArticleChoosen].mention}")
+                message = f"You're wrong, the article was from {self.Players[self.ArticleChoosen].mention}\n"
 
             # send the article
             url = self.Articles[self.ArticleChoosen].title.replace(" ", "_")
-            await self.Channel.send(f"{self.Articles[self.ArticleChoosen].title}\n{self.Articles[self.ArticleChoosen].summary}\nhttps://en.wikipedia.org/wiki/{url}")
+            message += f"{self.Articles[self.ArticleChoosen].title}\n{self.Articles[self.ArticleChoosen].summary}\nhttps://en.wikipedia.org/wiki/{url}\n"
 
             self.GameStage = 2
 
             # play again?
-            await self.Channel.send(f"Type `-play` to play again or `-quit` to go to the main menu.")
+            message = f"Type `-play` to play again or `-quit` to go to the main menu."
+
+            await self.Channel.send(message)
 
 
 if __name__ == "__main__":
