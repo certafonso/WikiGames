@@ -52,6 +52,8 @@ class Client(discord.Client):
                     await self.display_players(message.channel)
                 elif message.content == "-quit":
                     await self.end_game(message.channel)
+                elif message.content == "-help":
+                    await self.help(message.channel)
                 
                 else:
                     if self.running_games[str(message.channel.id)]["WaitingPlayers"]:   # Will only work if the game didn't start
@@ -155,7 +157,20 @@ class Client(discord.Client):
 
         await channel.send("GoodBye")
 
+    async def help(self, channel):
+        """Displays a help menu"""
+
+        if str(channel.id) not in self.running_games:               # not in game
+            await channel.send("To start a game you have to type `-wikigames` in the channel you want to use, the person who does this will be the gamemaster and will control various aspects of the game, then everyone who wants to play has to type `-join`.")
+        
+        elif self.running_games[str(channel.id)]["WaitingPlayers"]: # waiting players
+            await channel.send("Everyone that wants to play has to type `-join`.\nCurrently there is only one game: nPeopleAreLying. To play it, the gamemaster needs to type `-start` in chat.")
+        
+        else:                                                       # in game
+            await self.running_games[str(channel.id)]["Game"].help()
+
 class nPeopleAreLying():
+    """Implements the game nPeopleAreLying"""
     def __init__(self, channel, players):
 
         self.Channel = channel
@@ -221,7 +236,7 @@ class nPeopleAreLying():
             except wikipedia.exceptions.PageError:  # something weird happened let's just try again
                 self.Articles = []
                 self.Ready = []
-                self.Setup_Round0()
+                await self.Setup_Round0()
                 return
 
 
@@ -259,7 +274,7 @@ class nPeopleAreLying():
                 # self.Articles.append(wikipedia.page(random.choice(e.options)))  # chooses a random article from the disambiguation page
 
         except wikipedia.exceptions.PageError:  # something weird happened let's just try again
-            self.Setup_Round()
+            await self.Setup_Round()
             return
 
         self.Ready[self.ArticleChoosen] = False
@@ -381,6 +396,18 @@ class nPeopleAreLying():
             message = f"Type `-play` to play again or `-quit` to go to the main menu."
 
             await self.Channel.send(message)
+
+    async def help(self):
+        """Displays a help menu"""
+
+        if self.GameStage == 0:
+            await self.Channel.send("Everyone will recieve a random article from wikipedia in their DMs. You can do 3 things: \n\t - Accept the article given to you by replying `-ready`;\n\t - Reject the article and ask for a new one by replying `-new`;\n\t - Submit your own article replying with `-submit` followed by the article URL.\nWhen everyone is ready, the choosen article and the guesser will appear in the discord channel and its time do play the game!")
+        
+        elif self.GameStage == 1:
+            await self.Channel.send("When the guesser is done and wants to take a guess, you have to type `-guess` and then mention the person he thinks is telling the truth.")
+        
+        elif self.GameStage == 2:
+            await self.Channel.send("If you want to play again the gamemaster has to type `-play`, a article new article will be sent to the replace the one that was used and the game will start again.")
 
 
 if __name__ == "__main__":
