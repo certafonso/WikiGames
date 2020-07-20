@@ -145,10 +145,15 @@ class Client(discord.Client):
         await channel.send(message)
 
     async def game_selection(self, channel):
-        self.running_games[str(channel.id)]["WaitingPlayers"] = False
-        self.running_games[str(channel.id)]["Game"] = nPeopleAreLying.Game(channel, self.running_games[str(channel.id)]["Players"])
+        player_count = len(self.running_games[str(channel.id)]["Players"])
+        if player_count >= 3:  # you need 3 people to play nPeopleAreLying
+            self.running_games[str(channel.id)]["WaitingPlayers"] = False
+            self.running_games[str(channel.id)]["Game"] = nPeopleAreLying.Game(channel, self.running_games[str(channel.id)]["Players"])
 
-        await self.running_games[str(channel.id)]["Game"].Setup_Round0()
+            await self.running_games[str(channel.id)]["Game"].Setup_Round0()
+        
+        else:
+            await channel.send(f"You need at least 3 players to play nPeopleAreLying, you have {player_count}.")
         
     async def end_game(self, channel):
         """Ends a game"""
@@ -165,7 +170,7 @@ class Client(discord.Client):
             await channel.send("To start a game you have to type `-wikigames` in the channel you want to use, the person who does this will be the gamemaster and will control various aspects of the game, then everyone who wants to play has to type `-join`.")
         
         elif self.running_games[str(channel.id)]["WaitingPlayers"]: # waiting players
-            await channel.send("Everyone that wants to play has to type `-join`.\nCurrently there is only one game: nPeopleAreLying. To play it, the gamemaster needs to type `-start` in chat.")
+            await channel.send("Everyone that wants to play has to type `-join`.\nCurrently there is only one game: nPeopleAreLying (minimum of 3 players). To play it, the gamemaster needs to type `-start` in chat.")
         
         else:                                                       # in game
             await self.running_games[str(channel.id)]["Game"].help()

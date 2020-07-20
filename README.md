@@ -8,7 +8,7 @@ Currently there is only one game: nPeopleAreLying. To play it, the gamemaster ne
 
 ## nPeopleAreLying
 
-This is a game inspired by [Two of These People Are Lying](https://www.youtube.com/playlist?list=PLfx61sxf1Yz2I-c7eMRk9wBUUDCJkU7H0) from The Thechnical Difficulties.
+This is a game inspired by [Two of These People Are Lying](https://www.youtube.com/playlist?list=PLfx61sxf1Yz2I-c7eMRk9wBUUDCJkU7H0) from The Thechnical Difficulties, and you'll need at least 3 people to play.
 
 Everyone will have their article and every round one of those articles will be choosen and everyone will have to pretend that it was his article. One random person will have to question everyone and find who is telling the truth.
 
