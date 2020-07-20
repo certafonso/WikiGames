@@ -41,8 +41,6 @@ class Game():
 				if command[0] == "-play" and message.author == self.Players[0]:
 					await self.Setup_Round()
 
-		# print(self.Articles, self.Ready)
-
 	def get_index(self, userId):
 		"""Returns the index of a player, given his id"""
 
@@ -58,19 +56,16 @@ class Game():
 
 		self.Articles = []
 		for article in wikipedia.random(pages=len(self.Players)): # generate random articles
-			print(article)
 			try:
 				self.Articles.append(wikipedia.page(article))   
 
 			except wikipedia.exceptions.DisambiguationError:
-				print("erro 1")
 				article = wikipedia.random(pages=len(self.Players))   # generates new article
 				
 				self.Articles.append(wikipedia.page(article))   
 				# self.Articles.append(wikipedia.page(random.choice(e.options)))  # chooses a random article from the disambiguation page
 
 			except wikipedia.exceptions.PageError:  # something weird happened let's just try again
-				print("erro 2")
 				self.Articles = []
 				self.Ready = []
 				await self.Setup_Round0()
