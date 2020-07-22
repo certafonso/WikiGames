@@ -6,6 +6,7 @@ import time
 import wikipedia
 import random
 import nPeopleAreLying
+import WikiAgainstHumanity
 
 class Client(discord.Client):
     def __init__(self, *args, **kwargs):
@@ -58,9 +59,9 @@ class Client(discord.Client):
                 
                 else:
                     if self.running_games[str(message.channel.id)]["WaitingPlayers"]:   # Will only work if the game didn't start
-                        if message.content == "-start" and message.author == self.running_games[str(message.channel.id)]["GameMaster"]:
+                        if message.content.split(" ")[0] == "-play" and message.author == self.running_games[str(message.channel.id)]["GameMaster"]:
                             # only the gamemaster can start the game
-                            await self.game_selection(message.channel)
+                            await self.game_selection(message.channel, message.content.split(" "))
                     else:   # message will be handled by the game
                         await self.running_games[str(message.channel.id)]["Game"].on_message(message)
 
@@ -144,16 +145,39 @@ class Client(discord.Client):
 
         await channel.send(message)
 
-    async def game_selection(self, channel):
-        player_count = len(self.running_games[str(channel.id)]["Players"])
-        if player_count >= 3:  # you need 3 people to play nPeopleAreLying
-            self.running_games[str(channel.id)]["WaitingPlayers"] = False
-            self.running_games[str(channel.id)]["Game"] = nPeopleAreLying.Game(channel, self.running_games[str(channel.id)]["Players"])
+    async def game_selection(self, channel, command):
 
-            await self.running_games[str(channel.id)]["Game"].Setup_Round0()
-        
+        if len(command) == 1:   # didn't specify a game
+            await channel.send("Which game do you want to play? \nGames available: nPeopleAreLying and WikiAgainstHumanity \nType `-play [game name]`")
+
+        elif len(command) == 2: # a game was specified
+            player_count = len(self.running_games[str(channel.id)]["Players"])
+
+            if command[1] == "nPeopleAreLying":   
+                if player_count >= 2:       # you need 3 people to play nPeopleAreLying
+                    self.running_games[str(channel.id)]["WaitingPlayers"] = False
+                    self.running_games[str(channel.id)]["Game"] = nPeopleAreLying.Game(channel, self.running_games[str(channel.id)]["Players"])
+
+                    await self.running_games[str(channel.id)]["Game"].Setup_Round0()
+                else:
+                    await channel.send(f"You need at least 3 players to play nPeopleAreLying, you have {player_count}.")
+                    return
+            
+            elif command[1] == "WikiAgainstHumanity":
+                if player_count >= 2:       # you need 3 people to play WikiAgainstHumanity
+                    self.running_games[str(channel.id)]["WaitingPlayers"] = False
+                    self.running_games[str(channel.id)]["Game"] = WikiAgainstHumanity.Game(channel, self.running_games[str(channel.id)]["Players"])
+
+                    await self.running_games[str(channel.id)]["Game"].setup()
+                else:
+                    await channel.send(f"You need at least 3 players to play WikiAgainstHumanity, you have {player_count}.")
+                    return
+
+            else:
+                await channel.send("Invalid Game. \nGames available: nPeopleAreLying and WikiAgainstHumanity \nType `-play [game name]`")
+
         else:
-            await channel.send(f"You need at least 3 players to play nPeopleAreLying, you have {player_count}.")
+            await channel.send("Invalid Command. \nType `-play [game name]`")
         
     async def end_game(self, channel):
         """Ends a game"""
@@ -170,7 +194,7 @@ class Client(discord.Client):
             await channel.send("To start a game you have to type `-wikigames` in the channel you want to use, the person who does this will be the gamemaster and will control various aspects of the game, then everyone who wants to play has to type `-join`.")
         
         elif self.running_games[str(channel.id)]["WaitingPlayers"]: # waiting players
-            await channel.send("Everyone that wants to play has to type `-join`.\nCurrently there is only one game: nPeopleAreLying (minimum of 3 players). To play it, the gamemaster needs to type `-start` in chat.")
+            await channel.send("Everyone that wants to play has to type `-join`.\nThere are two games available: nPeopleAreLying (minimum of 3 players) and WikiAgainstHumanity (minimum of 3 players). To play a game, the gamemaster needs to type `-play [game name]` in chat.")
         
         else:                                                       # in game
             await self.running_games[str(channel.id)]["Game"].help()
