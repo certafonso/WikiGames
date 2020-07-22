@@ -28,12 +28,19 @@ class Game():
 				if command[0] == "-submit":
 					await self.Receive_Submit(message.author, " ".join(command[1:]))
 
-			elif self.GameStage == 1:	# game in stage 0, receiving submissions
+			elif self.GameStage == 1:	# game in stage 1, receiving votes
 				if command[0] == "-vote":
-					await self.Receive_Vote(message.author, command[1])
+					try:
+						await self.Receive_Vote(message.author, command[1])
+					except IndexError:
+						await self.Receive_Vote(message.author, None)
 
 		else:
-			if self.GameStage == 2:   # game in stage 2 - new round or quit
+			if self.GameStage == 1:	# game in stage 1, receiving votes
+				if command[0] == "-vote":
+					await self.Channel.send("To vote you have to dm the bot `-vote [option]`")
+
+			elif self.GameStage == 2:   # game in stage 2 - new round or quit
 				if command[0] == "-play" and message.author == self.Players[0]:
 					await self.setup()
 
@@ -98,18 +105,23 @@ class Game():
 
 		dm = player.dm_channel
 
-		self.submissions[self.Players.index(player)] = submission
-		self.Ready[self.Players.index(player)] = True
+		if self.Ready[self.Players.index(player)]:	# can't submit twice
+			await dm.send("You already made a submission")
+		elif submission == "":						# submission can't be empty
+			await dm.send("You didn't put any text")
+		else:
+			self.submissions[self.Players.index(player)] = submission
+			self.Ready[self.Players.index(player)] = True
 
-		n_ready = self.CheckReady()
+			n_ready = self.CheckReady()
 
-		await self.Channel.send(f"{player.mention} is ready ({n_ready}/{len(self.submissions)})")
-		await dm.send(f"Great! Now wait for everyone to be ready")
+			await self.Channel.send(f"{player.mention} is ready ({n_ready}/{len(self.submissions)})")
+			await dm.send(f"Great! Now wait for everyone to be ready")
 
-		print(self.submissions)
+			print(self.submissions)
 
-		if n_ready == len(self.Ready):	# everyone is ready, voting time!
-			await self.Start_Voting()
+			if n_ready == len(self.Ready):	# everyone is ready, voting time!
+				await self.Start_Voting()
 
 	def CheckReady(self):
 		"""Counts the number of ready players"""
@@ -153,30 +165,41 @@ class Game():
 
 		dm = player.dm_channel
 
-		try:
-			vote = int(vote)
-		except:
-			await dm.send("An error ocurred! Check if you inserted a number.")
-			return
-
-		real_vote = self.VotingOrder[vote]
-
-		if real_vote != self.Players.index(player):	# player voted on another person
-			self.Votes[real_vote] += 1			
-			self.Ready[self.Players.index(player)] = True
-
-			n_ready = self.CheckReady()
-
-			await self.Channel.send(f"{player.mention} voted ({n_ready}/{len(self.Ready)})")
-			await dm.send(f"Great! Now wait for everyone to be ready")
-
-			n_ready = self.CheckReady()
-
-			if n_ready == len(self.Players):	# everyone voted
-				await self.Count_Votes()
-
+		if self.Ready[self.Players.index(player)]:	# can't vote twice
+			await dm.send("You can't vote twice")
 		else:
-			await dm.send("You can't vote in yourself")
+			if vote == None:	#didn't put an optin
+				await dm.send("You didn't specify an option. To vote dm me `-vote [option]`.")
+				return
+
+			try:
+				vote = int(vote)
+			except:
+				await dm.send("An error ocurred! Check if you inserted a number.")
+				return
+
+			if vote >= len(self.Players) or vote < 0:	#checks if vote is valid
+				await dm.send("Invalid Vote.")
+				return
+
+			real_vote = self.VotingOrder[vote]
+
+			if real_vote != self.Players.index(player):	# player voted on another person
+				self.Votes[real_vote] += 1			
+				self.Ready[self.Players.index(player)] = True
+
+				n_ready = self.CheckReady()
+
+				await self.Channel.send(f"{player.mention} voted ({n_ready}/{len(self.Ready)})")
+				await dm.send(f"Great! Now wait for everyone to be ready")
+
+				n_ready = self.CheckReady()
+
+				if n_ready == len(self.Players):	# everyone voted
+					await self.Count_Votes()
+
+			else:
+				await dm.send("You can't vote in yourself")
 
 	async def Count_Votes(self):
 		""" Counts the votes and displays the result """
