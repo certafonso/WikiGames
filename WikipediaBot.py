@@ -194,7 +194,7 @@ class Client(discord.Client):
             await channel.send("To start a game you have to type `-wikigames` in the channel you want to use, the person who does this will be the gamemaster and will control various aspects of the game, then everyone who wants to play has to type `-join`.")
         
         elif self.running_games[str(channel.id)]["WaitingPlayers"]: # waiting players
-            await channel.send("Everyone that wants to play has to type `-join`.\nCurrently there is only one game: nPeopleAreLying (minimum of 3 players). To play it, the gamemaster needs to type `-start` in chat.")
+            await channel.send("Everyone that wants to play has to type `-join`.\nThere are two games available: nPeopleAreLying (minimum of 3 players) and WikiAgainstHumanity (minimum of 3 players). To play a game, the gamemaster needs to type `-play [game name]` in chat.")
         
         else:                                                       # in game
             await self.running_games[str(channel.id)]["Game"].help()

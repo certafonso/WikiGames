@@ -194,3 +194,15 @@ class Game():
 		message += f"Type `-play` to play again or `-quit` to go to the main menu."
 
 		await self.Channel.send(message)
+
+	async def help(self):
+		"""Displays a help menu"""
+
+		if self.GameStage == 0:
+			await self.Channel.send("Everyone will receive the same article with the title redacted, you have to submit a new funny title to the article, by replying `-submit [your title]` to the bot. \nOnce everyone is ready, all submissions will be displayed and it's time to vote on the best one!")
+		
+		elif self.GameStage == 1:
+			await self.Channel.send("To vote you have to dm the bot `-vote [option]`. You can't vote in yourself.")
+		
+		elif self.GameStage == 2:
+			await self.Channel.send("If you want to play again the gamemaster has to type `-play` and the game will restart.")
