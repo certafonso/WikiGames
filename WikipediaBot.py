@@ -1,3 +1,4 @@
+# external libraries
 import discord
 import asyncio
 from dotenv import load_dotenv
@@ -5,6 +6,9 @@ import os
 import time
 import wikipedia
 import random
+
+# project modules
+import Objects
 import nPeopleAreLying
 import WikiAgainstHumanity
 
@@ -59,9 +63,11 @@ class Client(discord.Client):
                 
                 else:
                     if self.running_games[str(message.channel.id)]["WaitingPlayers"]:   # Will only work if the game didn't start
-                        if message.content.split(" ")[0] == "-play" and message.author == self.running_games[str(message.channel.id)]["GameMaster"]:
+                        if message.content.split(" ")[0] == "-play" and self.running_games[str(message.channel.id)]["GameMaster"] == message.author:
                             # only the gamemaster can start the game
                             await self.game_selection(message.channel, message.content.split(" "))
+                        else:
+                            await message.channel.send("You're not the GameMaster")
                     else:   # message will be handled by the game
                         await self.running_games[str(message.channel.id)]["Game"].on_message(message)
 
@@ -82,6 +88,8 @@ class Client(discord.Client):
         if str(channel.id) in self.running_games:    #there's already a game running
             await channel.send("There is already a game running in this channel.")
         else:
+            GameMaster = Objects.Player(GameMaster)
+            
             self.running_games.update(
                 {str(channel.id): {
                     "GameMaster" : GameMaster,
@@ -104,7 +112,7 @@ class Client(discord.Client):
 
         elif self.running_games[str(channel.id)]["WaitingPlayers"]:   # the game didn't start, add to the player list
             await channel.send(f"Welcome to the Wikipedia Game {player.mention}.")
-            self.running_games[str(channel.id)]["Players"].append(player)
+            self.running_games[str(channel.id)]["Players"].append(Objects.Player(player))
             await self.display_players(channel)
 
     async def leave_player(self, channel, player):
