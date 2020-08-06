@@ -9,8 +9,11 @@ class Player():
 		if type(other) == discord.Member:
 			return self.Member == other
 
+		elif type(other) == type(self):
+			return self.Member == other.Member
+
 		else:
-			return self == other
+			return False
 
 	def __getattr__(self, attr):
 		# Trying to get something from the Member

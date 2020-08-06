@@ -41,7 +41,7 @@ class Client(discord.Client):
             return
 
         if type(message.channel) == discord.DMChannel:  # received a dm
-            channel = self.user_ingame(message.author)
+            channel, message.author = self.user_ingame(message.author)
             if channel != None:
                 await self.running_games[channel]["Game"].on_message(message)
 
@@ -63,11 +63,12 @@ class Client(discord.Client):
                 
                 else:
                     if self.running_games[str(message.channel.id)]["WaitingPlayers"]:   # Will only work if the game didn't start
-                        if message.content.split(" ")[0] == "-play" and self.running_games[str(message.channel.id)]["GameMaster"] == message.author:
-                            # only the gamemaster can start the game
-                            await self.game_selection(message.channel, message.content.split(" "))
-                        else:
-                            await message.channel.send("You're not the GameMaster")
+                        if message.content.split(" ")[0] == "-play":
+                            if self.running_games[str(message.channel.id)]["GameMaster"] == message.author:
+                                # only the gamemaster can start the game
+                                await self.game_selection(message.channel, message.content.split(" "))
+                            else:
+                                await message.channel.send("You're not the GameMaster")
                     else:   # message will be handled by the game
                         await self.running_games[str(message.channel.id)]["Game"].on_message(message)
 
@@ -76,11 +77,9 @@ class Client(discord.Client):
 
         for channel in self.running_games.keys():
             for player in self.running_games[channel]["Players"]:
-                # print(user.id)
-                # print(player.id)
                 if user.id == player.id:
-                    return channel
-        return None
+                    return channel, player
+        return None, None
 
     async def start_game(self, channel, GameMaster):
         """Starts a game in a channel"""
@@ -139,7 +138,7 @@ class Client(discord.Client):
         if len(self.running_games[str(channel.id)]["Players"]) != 0:
             message += "Player list:\n"
             for player in self.running_games[str(channel.id)]["Players"]:
-                message += player.mention + "\n"
+                message += f"{player.mention} ({player.points} points)\n"
 
             # if len(self.running_games[str(channel.id)]["PlayerQueue"]) != 0:
             #     await channel.send("Players on queue:")

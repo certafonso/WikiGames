@@ -209,6 +209,7 @@ class Game():
 		message = "And the results are... \n"
 
 		for i in range(0, len(self.Players)):
+			self.Players[i].points += self.Votes[i]
 			message += f"\"{self.submissions[i]}\" {self.Players[i].mention} - {self.Votes[i]} votes \n"
 
 		message += f"The winner is {self.Players[self.Votes.index(max(self.Votes))].mention} \n"
