@@ -159,9 +159,10 @@ class Client(discord.Client):
 
         elif len(command) == 2: # a game was specified
             player_count = len(self.running_games[str(channel.id)]["Players"])
+            command[1] = command[1].lower()
 
-            if command[1] == "nPeopleAreLying":   
-                if player_count >= 2:       # you need 3 people to play nPeopleAreLying
+            if command[1] == "npeoplearelying":   
+                if player_count >= 3:       # you need 3 people to play nPeopleAreLying
                     self.running_games[str(channel.id)]["WaitingPlayers"] = False
                     self.running_games[str(channel.id)]["Game"] = nPeopleAreLying.Game(channel, self.running_games[str(channel.id)]["Players"])
 
@@ -170,8 +171,8 @@ class Client(discord.Client):
                     await channel.send(f"You need at least 3 players to play nPeopleAreLying, you have {player_count}.")
                     return
             
-            elif command[1] == "WikiAgainstHumanity":
-                if player_count >= 2:       # you need 3 people to play WikiAgainstHumanity
+            elif command[1] == "wikiagainsthumanity":
+                if player_count >= 3:       # you need 3 people to play WikiAgainstHumanity
                     self.running_games[str(channel.id)]["WaitingPlayers"] = False
                     self.running_games[str(channel.id)]["Game"] = WikiAgainstHumanity.Game(channel, self.running_games[str(channel.id)]["Players"])
 
