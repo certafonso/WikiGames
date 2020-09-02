@@ -57,38 +57,28 @@ class Game():
 
 		await self.Channel.send("Sending articles to everyone...")
 
-		self.Articles = []
-		for article in wikipedia.random(pages=len(self.Players)): # generate random articles
-			try:
-				self.Articles.append(wikipedia.page(article))   
+		self.Articles = [None] * len(self.Players)
+		self.Ready = [False] * len(self.Players)
 
-			except wikipedia.exceptions.DisambiguationError:
-				article = wikipedia.random(pages=len(self.Players))   # generates new article
-				
-				self.Articles.append(wikipedia.page(article))   
-				# self.Articles.append(wikipedia.page(random.choice(e.options)))  # chooses a random article from the disambiguation page
-
-			except wikipedia.exceptions.PageError:  # something weird happened let's just try again
-				self.Articles = []
-				self.Ready = []
-				await self.Setup_Round0()
-				return
-
-
-			self.Ready.append(False)
-
-		for i in range(0, len(self.Players)):
+		for i in range(0, len(self.Players)): # generate random articles
+			self.Articles[i] = GetArticle()
+			
 			dm = self.Players[i].dm_channel
 			if dm == None:
 				await self.Players[i].create_dm()
 				dm = self.Players[i].dm_channel
 
 			url = self.Articles[i].title.replace(" ", "_")
-			await dm.send(f"""{self.Articles[i].title}\n
-			{self.Articles[i].summary}\n
-			https://en.wikipedia.org/wiki/{url}\n
-			Type `-ready` once you're ready. If you want another article type `-new`. You can also submit your own article using `-submit [article URL]`
-			""")
+
+			try:
+				await dm.send(f"""{self.Articles[i].title}\n
+				{self.Articles[i].summary}\n
+				https://en.wikipedia.org/wiki/{url}\n
+				Type `-ready` once you're ready. If you want another article type `-new`. You can also submit your own article using `-submit [article URL]`
+				""")
+		
+			except discord.HTTPException:	# error sending the message (probably was too long)
+				await self.RejectArticle(self.Players[i])
 
 	async def Setup_Round(self):
 		"""Will setup a round"""
@@ -97,20 +87,7 @@ class Game():
 
 		await self.Channel.send(f"Sending an article to {self.Players[self.ArticleChoosen].mention}...")
 
-		article = wikipedia.random() # generate a random article
-
-		try:
-			self.Articles[self.ArticleChoosen] = wikipedia.page(article) 
-
-		except wikipedia.exceptions.DisambiguationError:
-				article = wikipedia.random(pages=len(self.Players))   # generates new article
-				
-				self.Articles.append(wikipedia.page(article))   
-				# self.Articles.append(wikipedia.page(random.choice(e.options)))  # chooses a random article from the disambiguation page
-
-		except wikipedia.exceptions.PageError:  # something weird happened let's just try again
-			await self.Setup_Round()
-			return
+		self.Articles[self.ArticleChoosen] = GetArticle()
 
 		self.Ready[self.ArticleChoosen] = False
 		
@@ -120,11 +97,16 @@ class Game():
 			dm = self.Players[self.ArticleChoosen].dm_channel
 
 		url = self.Articles[self.ArticleChoosen].title.replace(" ", "_")
-		await dm.send(f"""{self.Articles[self.ArticleChoosen].title}\n
-		{self.Articles[self.ArticleChoosen].summary}\n
-		https://en.wikipedia.org/wiki/{url}\n
-		Type `-ready` once you're ready. If you want another article type `-new`. You can also submit your own article using `-submit [article URL]`
-		""")
+
+		try:
+			await dm.send(f"""{self.Articles[self.ArticleChoosen].title}\n
+			{self.Articles[self.ArticleChoosen].summary}\n
+			https://en.wikipedia.org/wiki/{url}\n
+			Type `-ready` once you're ready. If you want another article type `-new`. You can also submit your own article using `-submit [article URL]`
+			""")
+		
+		except discord.HTTPException:	# error sending the message (probably was too long)
+			await self.Setup_Round()
 
 	async def AcceptArticle(self, player):
 		"""Will add the player to the ready list once he accepted his article"""
@@ -147,15 +129,18 @@ class Game():
 		dm = player.dm_channel
 		i = self.Players.index(player)
 
-		article = wikipedia.random()
-
-		self.Articles[i] = wikipedia.page(article)
+		self.Articles[i] = GetArticle()
 
 		url = self.Articles[i].title.replace(" ", "_")
-		await dm.send(f"""{self.Articles[i].title}\n
-		{self.Articles[i].summary}\n
-		https://en.wikipedia.org/wiki/{url}\n
-		Type `-ready` once you're ready. If you want another article type `-new`. You can also submit your own article using `-submit [article URL]`""")
+
+		try:
+			await dm.send(f"""{self.Articles[i].title}\n
+			{self.Articles[i].summary}\n
+			https://en.wikipedia.org/wiki/{url}\n
+			Type `-ready` once you're ready. If you want another article type `-new`. You can also submit your own article using `-submit [article URL]`""")
+		
+		except discord.HTTPException:	# error sending the message (probably was too long)
+			await self.RejectArticle(player)
 
 	async def ReceiveArticle(self, player, url):
 		"""Receives an article submited by a player"""
@@ -211,20 +196,20 @@ class Game():
 
 	async def Guess(self, guess):
 		"""Handles a guess"""
-		print("0")
+		print(guess, self.Players[self.ArticleChoosen].mention)
 
 		if guess[:3] != "<@!": # no one was mentioned
 			await self.Channel.send(f"No one was mentioned\nTo guess type `-guess` and then mention the person you think is telling the truth.")
 		
 		else:
-			if guess[3:] == self.Players[self.ArticleChoosen].mention[2:]:	# guess is right
+			if guess == self.Players[self.ArticleChoosen].mention:	# guess is right
 				message = "You're right!\n"
 				self.Players[self.Guesser].points += 1	# guesser gets 1 point
 			else:															# guess is wrong
 				message = f"You're wrong, the article was from {self.Players[self.ArticleChoosen].mention}\n"
 				
 				for player in self.Players:
-					if guess[3:] == player.mention[2:]:			# finds the person o convinced the guesser
+					if guess == player.mention:			# finds the person o convinced the guesser
 						self.Players[self.Guesser].points += 1	# gives them 1 point
 
 			# send the article
@@ -249,3 +234,12 @@ class Game():
 		
 		elif self.GameStage == 2:
 			await self.Channel.send("If you want to play again the gamemaster has to type `-play`, a article new article will be sent to the replace the one that was used and the game will start again.")
+
+def GetArticle():
+	""" Generates an article """
+
+	try:
+		return wikipedia.page(wikipedia.random())
+
+	except:  # an error ocurred, probably gone to a disambiguation page, try again
+		return GetArticle()
