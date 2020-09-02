@@ -41,7 +41,7 @@ class Game():
 					await self.Channel.send("To vote you have to dm the bot `-vote [option]`")
 
 			elif self.GameStage == 2:   # game in stage 2 - new round or quit
-				if command[0] == "-play" and message.author == self.Players[0]:
+				if command[0] == "-play" and self.Players[0] == message.author:
 					await self.setup()
 
 	async def setup(self):
@@ -118,7 +118,7 @@ class Game():
 			await self.Channel.send(f"{player.mention} is ready ({n_ready}/{len(self.submissions)})")
 			await dm.send(f"Great! Now wait for everyone to be ready")
 
-			print(self.submissions)
+			# print(self.submissions)
 
 			if n_ready == len(self.Ready):	# everyone is ready, voting time!
 				await self.Start_Voting()
@@ -148,7 +148,7 @@ class Game():
 
 		for i in order:	# display the articles
 			message += f"\n{cnt} - {self.submissions[i]}"
-			self.VotingOrder[i] = cnt
+			self.VotingOrder[cnt] = i
 			cnt += 1
 
 		message += "\n\nTo vote dm me `-vote [option]`. Obviously you can't vote for yourself."
