@@ -37,7 +37,7 @@ class Game():
 			if self.GameStage == 1:     # game in stage 1 - guessing the articles
 				if command[0] == "-guess" and self.Players[self.Guesser] == message.author:
 					try:
-						await self.Guess(command[1])
+						await self.Guess(message)
 					except:
 						await self.Guess("")
 			elif self.GameStage == 2:   # game in stage 2 - new round or quit
@@ -196,20 +196,19 @@ class Game():
 
 	async def Guess(self, guess):
 		"""Handles a guess"""
-		print(guess, self.Players[self.ArticleChoosen].mention)
 
-		if guess[:3] != "<@!": # no one was mentioned
+		if guess.content == guess.clean_content: # no one was mentioned
 			await self.Channel.send(f"No one was mentioned\nTo guess type `-guess` and then mention the person you think is telling the truth.")
 		
 		else:
-			if guess == self.Players[self.ArticleChoosen].mention:	# guess is right
+			if self.Players[self.ArticleChoosen].mentioned_in(guess):	# guess is right
 				message = "You're right!\n"
 				self.Players[self.Guesser].points += 1	# guesser gets 1 point
 			else:															# guess is wrong
 				message = f"You're wrong, the article was from {self.Players[self.ArticleChoosen].mention}\n"
 				
 				for player in self.Players:
-					if guess == player.mention:			# finds the person o convinced the guesser
+					if player.mentioned_in(guess):			# finds the person o convinced the guesser
 						self.Players[self.Guesser].points += 1	# gives them 1 point
 
 			# send the article
