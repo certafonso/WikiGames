@@ -12,7 +12,7 @@ class Game():
 		self.GameStage = 0
 		self.Articles = []
 		self.Ready = []
-		self.Guesser = 0
+		self.Guesser = -1
 		self.ArticleChoosen = 0
 
 	async def on_message(self, message):
@@ -180,8 +180,13 @@ class Game():
 
 	async def StartRound(self):
 		"""Selects a random player to guess and a random article"""
+		
+		new_guesser = self.Guesser
 
-		self.Guesser = random.randint(0, len(self.Players)-1)
+		while new_guesser == self.Guesser:		# repeating guessers is boring
+			new_guesser = random.randint(0, len(self.Players)-1)
+
+		self.Guesser = new_guesser
 		self.ArticleChoosen = self.Guesser
 
 		message = f"{self.Players[self.Guesser].mention} is guessing.\nTo guess type `-guess` and then mention the person you think is telling the truth.\n"
@@ -203,7 +208,8 @@ class Game():
 		else:
 			if self.Players[self.ArticleChoosen].mentioned_in(guess):	# guess is right
 				message = "You're right!\n"
-				self.Players[self.Guesser].points += 1	# guesser gets 1 point
+				self.Players[self.Guesser].points += 1			# guesser gets 1 point
+				self.Players[self.ArticleChoosen].points += 1	# article owner gets a point
 			else:															# guess is wrong
 				message = f"You're wrong, the article was from {self.Players[self.ArticleChoosen].mention}\n"
 				
