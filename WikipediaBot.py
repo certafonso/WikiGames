@@ -1,3 +1,4 @@
+# external libraries
 import discord
 import asyncio
 from dotenv import load_dotenv
@@ -5,6 +6,9 @@ import os
 import time
 import wikipedia
 import random
+
+# project modules
+import Objects
 import nPeopleAreLying
 import WikiAgainstHumanity
 
@@ -37,7 +41,7 @@ class Client(discord.Client):
             return
 
         if type(message.channel) == discord.DMChannel:  # received a dm
-            channel = self.user_ingame(message.author)
+            channel, message.author = self.user_ingame(message.author)
             if channel != None:
                 await self.running_games[channel]["Game"].on_message(message)
 
@@ -59,9 +63,12 @@ class Client(discord.Client):
                 
                 else:
                     if self.running_games[str(message.channel.id)]["WaitingPlayers"]:   # Will only work if the game didn't start
-                        if message.content.split(" ")[0] == "-play" and message.author == self.running_games[str(message.channel.id)]["GameMaster"]:
-                            # only the gamemaster can start the game
-                            await self.game_selection(message.channel, message.content.split(" "))
+                        if message.content.split(" ")[0] == "-play":
+                            if self.running_games[str(message.channel.id)]["GameMaster"] == message.author:
+                                # only the gamemaster can start the game
+                                await self.game_selection(message.channel, message.content.split(" "))
+                            else:
+                                await message.channel.send("You're not the GameMaster")
                     else:   # message will be handled by the game
                         await self.running_games[str(message.channel.id)]["Game"].on_message(message)
 
@@ -70,11 +77,9 @@ class Client(discord.Client):
 
         for channel in self.running_games.keys():
             for player in self.running_games[channel]["Players"]:
-                # print(user.id)
-                # print(player.id)
                 if user.id == player.id:
-                    return channel
-        return None
+                    return channel, player
+        return None, None
 
     async def start_game(self, channel, GameMaster):
         """Starts a game in a channel"""
@@ -82,6 +87,8 @@ class Client(discord.Client):
         if str(channel.id) in self.running_games:    #there's already a game running
             await channel.send("There is already a game running in this channel.")
         else:
+            GameMaster = Objects.Player(GameMaster)
+            
             self.running_games.update(
                 {str(channel.id): {
                     "GameMaster" : GameMaster,
@@ -104,7 +111,7 @@ class Client(discord.Client):
 
         elif self.running_games[str(channel.id)]["WaitingPlayers"]:   # the game didn't start, add to the player list
             await channel.send(f"Welcome to the Wikipedia Game {player.mention}.")
-            self.running_games[str(channel.id)]["Players"].append(player)
+            self.running_games[str(channel.id)]["Players"].append(Objects.Player(player))
             await self.display_players(channel)
 
     async def leave_player(self, channel, player):
@@ -131,7 +138,7 @@ class Client(discord.Client):
         if len(self.running_games[str(channel.id)]["Players"]) != 0:
             message += "Player list:\n"
             for player in self.running_games[str(channel.id)]["Players"]:
-                message += player.mention + "\n"
+                message += f"{player.mention} ({player.points} points)\n"
 
             # if len(self.running_games[str(channel.id)]["PlayerQueue"]) != 0:
             #     await channel.send("Players on queue:")
@@ -152,9 +159,10 @@ class Client(discord.Client):
 
         elif len(command) == 2: # a game was specified
             player_count = len(self.running_games[str(channel.id)]["Players"])
+            command[1] = command[1].lower()
 
-            if command[1] == "nPeopleAreLying":   
-                if player_count >= 2:       # you need 3 people to play nPeopleAreLying
+            if command[1] == "npeoplearelying":   
+                if player_count >= 3:       # you need 3 people to play nPeopleAreLying
                     self.running_games[str(channel.id)]["WaitingPlayers"] = False
                     self.running_games[str(channel.id)]["Game"] = nPeopleAreLying.Game(channel, self.running_games[str(channel.id)]["Players"])
 
@@ -163,8 +171,8 @@ class Client(discord.Client):
                     await channel.send(f"You need at least 3 players to play nPeopleAreLying, you have {player_count}.")
                     return
             
-            elif command[1] == "WikiAgainstHumanity":
-                if player_count >= 2:       # you need 3 people to play WikiAgainstHumanity
+            elif command[1] == "wikiagainsthumanity":
+                if player_count >= 3:       # you need 3 people to play WikiAgainstHumanity
                     self.running_games[str(channel.id)]["WaitingPlayers"] = False
                     self.running_games[str(channel.id)]["Game"] = WikiAgainstHumanity.Game(channel, self.running_games[str(channel.id)]["Players"])
 
