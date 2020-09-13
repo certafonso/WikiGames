@@ -103,16 +103,20 @@ class Client(discord.Client):
     async def join_player(self, channel, player):
         """Adds a player to a game"""
 
-        if player in self.running_games[str(channel.id)]["Players"]:    # player already in the game
-            await channel.send(f"You're already in the game.")
+        for i in range(0, len(self.running_games[str(channel.id)]["Players"])):
+            if self.running_games[str(channel.id)]["Players"][i] == player:    # player already in the game
+                await channel.send(f"You're already in the game.")
+                return
 
         # elif player in self.running_games[str(channel.id)]["PlayerQueue"]:  # player already in the queue
         #     await channel.send(f"You're already in the queue, you'll start playing when this round ends.")
 
-        elif self.running_games[str(channel.id)]["WaitingPlayers"]:   # the game didn't start, add to the player list
+        if self.running_games[str(channel.id)]["WaitingPlayers"]:   # the game didn't start, add to the player list
             await channel.send(f"Welcome to the Wikipedia Game {player.mention}.")
             self.running_games[str(channel.id)]["Players"].append(Objects.Player(player))
             await self.display_players(channel)
+        else:
+            await channel.send("There is a game running, you have to wait for it to end.")
 
     async def leave_player(self, channel, player):
         """Removes a player from a game"""
