@@ -213,9 +213,10 @@ class Game():
 			else:															# guess is wrong
 				message = f"You're wrong, the article was from {self.Players[self.ArticleChoosen].mention}\n"
 				
-				for player in self.Players:
-					if player.mentioned_in(guess):			# finds the person o convinced the guesser
-						self.Players[self.Guesser].points += 1	# gives them 1 point
+				for i in range(0, len(self.Players)):
+				#for player in self.Players:
+					if self.Players[i].mentioned_in(guess):			# finds the person o convinced the guesser
+						self.Players[i].points += 1	                # gives them 1 point
 
 			# send the article
 			url = self.Articles[self.ArticleChoosen].title.replace(" ", "_")
